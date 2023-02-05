@@ -1,0 +1,17 @@
+if [ -n "${DEBUG}" ];
+then
+  JAVA_OPTS='-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8787'
+else
+  JAVA_OPTS=''
+fi
+
+if [ -z "${PROSPERO_EXTRAS_HOME}" ];
+then
+ full_path=$(realpath $0)
+ PROSPERO_EXTRAS_HOME=$(dirname $full_path)
+fi
+CLASSPATH=( "${PROSPERO_EXTRAS_HOME}/target/"prospero-extras-*-shaded.jar )
+
+java ${JAVA_OPTS} -jar "${CLASSPATH}" "$@"
+
+java -jar target/prospero-extras-1.0.0.Beta1-SNAPSHOT-shaded.jar "$@"

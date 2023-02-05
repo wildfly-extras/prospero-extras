@@ -2,6 +2,7 @@ package org.wildfly.prospero.extras;
 
 import org.wildfly.prospero.extras.bundle.create.CreateBundleCommand;
 import org.wildfly.prospero.extras.manifest.diff.ManifestsDiffCommand;
+import org.wildfly.prospero.extras.manifest.download.DownloadDiffCommand;
 import picocli.CommandLine;
 
 public class Main {
@@ -16,6 +17,7 @@ public class Main {
 
         commandLine.addSubcommand(new CreateBundleCommand());
         commandLine.addSubcommand(new ManifestsDiffCommand());
+        commandLine.addSubcommand(new DownloadDiffCommand());
 
         commandLine.setUsageHelpAutoWidth(true);
         return commandLine;

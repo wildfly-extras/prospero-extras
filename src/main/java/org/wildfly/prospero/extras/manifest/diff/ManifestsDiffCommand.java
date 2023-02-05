@@ -34,31 +34,9 @@ public class ManifestsDiffCommand implements Callable<Integer> {
         final ChannelManifest manifestTwo = ChannelManifestMapper.from(this.manifestPathTwo.toUri().toURL());
 
 
-        Map<String, String> versionMapOne = streamToMap(manifestOne);
-
-        Map<String, String> versionMapTwo = streamToMap(manifestTwo);
-
-        for (String key: versionMapTwo.keySet()) {
-            if (!versionMapOne.containsKey(key)) {
-                versionMapOne.put(key, null);
-            }
-        }
+        List<ArtifactChange> changes = manifestDiff(manifestOne, manifestTwo);
 
         System.out.println();
-        List<ArtifactChange> changes = new ArrayList<>();
-
-        for (String key : versionMapOne.keySet()) {
-            final String versionOne = versionMapOne.get(key);
-            final String versionTwo = versionMapTwo.get(key);
-            if (!versionMapTwo.containsKey(key)) {
-                changes.add(new ArtifactChange(versionOne, null, key, ArtifactChange.Status.REMOVED));
-            } else if (versionMapOne.get(key) == null) {
-                changes.add(new ArtifactChange(null, versionTwo, key, ArtifactChange.Status.INSTALLED));
-            } else if (!versionTwo.equals(versionOne)) {
-                changes.add(new ArtifactChange(versionOne, versionTwo, key, ArtifactChange.Status.UPDATED));
-            }
-        }
-
         changes.forEach(c->{
             switch (c.getStatus()) {
                 case REMOVED:
@@ -78,6 +56,33 @@ public class ManifestsDiffCommand implements Callable<Integer> {
         });
 
         return ReturnCodes.SUCCESS;
+    }
+
+    public static List<ArtifactChange> manifestDiff(ChannelManifest manifestOne, ChannelManifest manifestTwo) {
+        Map<String, String> versionMapOne = streamToMap(manifestOne);
+
+        Map<String, String> versionMapTwo = streamToMap(manifestTwo);
+
+        for (String key: versionMapTwo.keySet()) {
+            if (!versionMapOne.containsKey(key)) {
+                versionMapOne.put(key, null);
+            }
+        }
+
+        List<ArtifactChange> changes = new ArrayList<>();
+
+        for (String key : versionMapOne.keySet()) {
+            final String versionOne = versionMapOne.get(key);
+            final String versionTwo = versionMapTwo.get(key);
+            if (!versionMapTwo.containsKey(key)) {
+                changes.add(new ArtifactChange(versionOne, null, key, ArtifactChange.Status.REMOVED));
+            } else if (versionMapOne.get(key) == null) {
+                changes.add(new ArtifactChange(null, versionTwo, key, ArtifactChange.Status.INSTALLED));
+            } else if (!versionTwo.equals(versionOne)) {
+                changes.add(new ArtifactChange(versionOne, versionTwo, key, ArtifactChange.Status.UPDATED));
+            }
+        }
+        return changes;
     }
 
     private static Map<String, String> streamToMap(ChannelManifest manifestOne) {

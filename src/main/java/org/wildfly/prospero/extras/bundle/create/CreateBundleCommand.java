@@ -9,12 +9,11 @@ import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.jboss.logging.Logger;
+import org.wildfly.prospero.extras.converters.RepositoriesConverter;
 import org.wildfly.prospero.promotion.ArtifactBundle;
 import org.wildfly.prospero.wfchannel.MavenSessionManager;
 import picocli.CommandLine;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,14 +33,13 @@ public class CreateBundleCommand implements Callable<Integer> {
     @CommandLine.Option(names={"--artifact", "--artifacts"}, required = true)
     private List<String> artifacts = new ArrayList<>();
 
-    @CommandLine.Option(names={"--repository", "--repositories"})
-    private List<String> repositories = new ArrayList<>();
+    @CommandLine.Option(names={"--repository", "--repositories"}, converter = RepositoriesConverter.class)
+    private List<RemoteRepository> repositories = new ArrayList<>();
 
     @Override
     public Integer call() throws Exception {
         LOG.info("Building artifact requests");
         List<ArtifactRequest> requests = new ArrayList<>();
-        final List<RemoteRepository> mvnRepositories = parseRepositories();
 
         for (String artifactSpec : artifacts) {
             final String[] gav = artifactSpec.split(":");
@@ -64,7 +62,7 @@ public class CreateBundleCommand implements Callable<Integer> {
                 extension = gav[3];
             }
             final DefaultArtifact artifact = new DefaultArtifact(gav[0], gav[1], classifier, extension, version, null);
-            final ArtifactRequest artifactRequest = new ArtifactRequest(artifact, mvnRepositories, null);
+            final ArtifactRequest artifactRequest = new ArtifactRequest(artifact, repositories, null);
             LOG.infof("{groupId: %s, artifactId: %s, classifier: %s, extension %s, version: %s}",
                     artifact.getGroupId(), artifact.getArtifactId(), artifact.getClassifier(),
                     artifact.getExtension(), artifact.getVersion());
@@ -91,23 +89,5 @@ public class CreateBundleCommand implements Callable<Integer> {
                     .forEach(r-> LOG.warn(" * " + r.getArtifact()));
             return -1;
         }
-    }
-
-    private List<RemoteRepository> parseRepositories() throws MalformedURLException {
-        List<RemoteRepository> mavenRepos = new ArrayList<>();
-        int i = 0;
-        for (String spec : repositories) {
-            if (spec.contains("::")) {
-                final String[] splitSpec = spec.split("::");
-                final String id = splitSpec[0];
-                final URL url = new URL(splitSpec[1]);
-                mavenRepos.add(new RemoteRepository.Builder(id, "default", url.toExternalForm()).build());
-            } else {
-                final URL url = new URL(spec);
-                final String id = "repo-" + i++;
-                mavenRepos.add(new RemoteRepository.Builder(id, "default", url.toExternalForm()).build());
-            }
-        }
-        return mavenRepos;
     }
 }

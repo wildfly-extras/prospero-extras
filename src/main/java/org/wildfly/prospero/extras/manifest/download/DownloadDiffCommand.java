@@ -10,6 +10,8 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.wildfly.channel.ChannelManifest;
 import org.wildfly.installationmanager.ArtifactChange;
+import org.wildfly.prospero.extras.converters.ManifestConverter;
+import org.wildfly.prospero.extras.converters.RepositoriesConverter;
 import org.wildfly.prospero.extras.manifest.diff.ManifestsDiffCommand;
 import org.wildfly.prospero.wfchannel.MavenSessionManager;
 import picocli.CommandLine;

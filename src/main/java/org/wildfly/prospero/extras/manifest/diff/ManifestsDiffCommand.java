@@ -2,14 +2,13 @@ package org.wildfly.prospero.extras.manifest.diff;
 
 import org.jboss.logging.Logger;
 import org.wildfly.channel.ChannelManifest;
-import org.wildfly.channel.ChannelManifestMapper;
 import org.wildfly.channel.Stream;
 import org.wildfly.installationmanager.ArtifactChange;
 import org.wildfly.prospero.extras.ReturnCodes;
 import org.wildfly.prospero.extras.bundle.create.CreateBundleCommand;
+import org.wildfly.prospero.extras.converters.ManifestConverter;
 import picocli.CommandLine;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -21,17 +20,14 @@ import java.util.concurrent.Callable;
 public class ManifestsDiffCommand implements Callable<Integer> {
     private static final Logger LOG = Logger.getLogger(CreateBundleCommand.class);
 
-    @CommandLine.Parameters(index = "0")
-    private Path manifestPathOne;
+    @CommandLine.Parameters(index = "0", converter = ManifestConverter.class)
+    private ChannelManifest manifestOne;
 
-    @CommandLine.Parameters(index = "1")
-    private Path manifestPathTwo;
+    @CommandLine.Parameters(index = "1", converter = ManifestConverter.class)
+    private ChannelManifest manifestTwo;
 
     @Override
     public Integer call() throws Exception {
-        System.out.printf("Comparing %s:%s%n", manifestPathOne, manifestPathTwo);
-        final ChannelManifest manifestOne = ChannelManifestMapper.from(this.manifestPathOne.toUri().toURL());
-        final ChannelManifest manifestTwo = ChannelManifestMapper.from(this.manifestPathTwo.toUri().toURL());
 
 
         List<ArtifactChange> changes = manifestDiff(manifestOne, manifestTwo);

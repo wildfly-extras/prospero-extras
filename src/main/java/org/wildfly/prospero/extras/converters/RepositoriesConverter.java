@@ -1,4 +1,4 @@
-package org.wildfly.prospero.extras.manifest.download;
+package org.wildfly.prospero.extras.converters;
 
 import org.eclipse.aether.repository.RemoteRepository;
 import picocli.CommandLine;

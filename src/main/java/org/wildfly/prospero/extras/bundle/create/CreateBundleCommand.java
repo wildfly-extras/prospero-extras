@@ -26,6 +26,7 @@ import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.jboss.logging.Logger;
+import org.wildfly.prospero.api.MavenOptions;
 import org.wildfly.prospero.extras.converters.RepositoriesConverter;
 import org.wildfly.prospero.promotion.ArtifactBundle;
 import org.wildfly.prospero.wfchannel.MavenSessionManager;
@@ -36,8 +37,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
-
-import static org.wildfly.installationmanager.MavenOptions.LOCAL_MAVEN_REPO;
 
 @CommandLine.Command(name = "create-bundle")
 public class CreateBundleCommand implements Callable<Integer> {
@@ -87,7 +86,7 @@ public class CreateBundleCommand implements Callable<Integer> {
         }
 
         LOG.info("Downloading artifacts");
-        final MavenSessionManager mavenSessionManager = new MavenSessionManager(LOCAL_MAVEN_REPO);
+        final MavenSessionManager mavenSessionManager = new MavenSessionManager(MavenOptions.DEFAULT_OPTIONS);
         final RepositorySystem system = mavenSessionManager.newRepositorySystem();
         final DefaultRepositorySystemSession session = mavenSessionManager.newRepositorySystemSession(system, true);
         try {

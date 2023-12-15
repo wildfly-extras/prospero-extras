@@ -29,6 +29,7 @@ import org.eclipse.aether.resolution.ArtifactResult;
 import org.wildfly.channel.ChannelManifest;
 import org.wildfly.channel.ChannelManifestMapper;
 import org.wildfly.installationmanager.ArtifactChange;
+import org.wildfly.prospero.api.MavenOptions;
 import org.wildfly.prospero.extras.converters.ManifestConverter;
 import org.wildfly.prospero.extras.converters.RepositoriesConverter;
 import org.wildfly.prospero.extras.manifest.diff.ManifestsDiffCommand;
@@ -50,8 +51,6 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-
-import static org.wildfly.installationmanager.MavenOptions.LOCAL_MAVEN_REPO;
 
 // TODO: handle use case with only baseManifest and update-gav
 @CommandLine.Command(name = "download-diff")
@@ -97,7 +96,7 @@ public class DownloadDiffCommand implements Callable<Integer> {
         }
 
         System.out.println("Downloading artifacts");
-        final MavenSessionManager mavenSessionManager = new MavenSessionManager(LOCAL_MAVEN_REPO);
+        final MavenSessionManager mavenSessionManager = new MavenSessionManager(MavenOptions.DEFAULT_OPTIONS);
         final RepositorySystem system = mavenSessionManager.newRepositorySystem();
         final DefaultRepositorySystemSession session = mavenSessionManager.newRepositorySystemSession(system, true);
 

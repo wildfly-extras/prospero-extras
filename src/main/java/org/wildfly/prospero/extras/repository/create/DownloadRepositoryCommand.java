@@ -47,6 +47,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -65,8 +66,11 @@ public class DownloadRepositoryCommand implements Callable<Integer> {
     @CommandLine.Option(names={"--feature-packs"}, split = ",")
     private final List<String> featurePacks = new ArrayList<>();
 
-    @CommandLine.Option(names={"--use-zip"}, required = false)
+    @CommandLine.Option(names={"--use-zip"})
     private boolean useZip = false;
+
+    @CommandLine.Option(names={"--include-sources"})
+    private boolean includeSources = false;
 
     public static void main(String[] args) throws Exception {
         final MavenSessionManager msm = new MavenSessionManager(MavenOptions.DEFAULT_OPTIONS);
@@ -171,7 +175,25 @@ public class DownloadRepositoryCommand implements Callable<Integer> {
 
         // download and deploy the artifact
         final List<ArtifactRequest> requests = artifactSet.stream()
-                .map(a -> new ArtifactRequest(a, repositories, null))
+                .flatMap(a -> {
+                    if (includeSources && a.getClassifier() != null && a.getExtension().equals("jar")) {
+                        // TODO: is there -sources jar for jars with classifer (e.g. wildfly-cli -client)
+                        // TODO: are there -sources for zips (e.g. feature packs)
+                        Artifact sourcesArtifact = new DefaultArtifact(
+                                a.getGroupId(),
+                                a.getArtifactId(),
+                                "sources",
+                                a.getExtension(),
+                                a.getVersion()
+                        );
+                        return java.util.stream.Stream.of(
+                                new ArtifactRequest(a, repositories, null),
+                                new ArtifactRequest(sourcesArtifact, repositories, null)
+                        );
+                    } else {
+                        return java.util.stream.Stream.of(new ArtifactRequest(a, repositories, null));
+                    }
+                })
                 .collect(Collectors.toList());
 
         final List<ArtifactResult> res = mvnSystem.resolveArtifacts(mvnSession, requests);

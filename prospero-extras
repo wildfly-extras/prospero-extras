@@ -13,5 +13,3 @@ fi
 CLASSPATH=( "${PROSPERO_EXTRAS_HOME}/target/"prospero-extras-*-shaded.jar )
 
 java ${JAVA_OPTS} -jar "${CLASSPATH}" "$@"
-
-java -jar target/prospero-extras-1.0.0.Beta1-SNAPSHOT-shaded.jar "$@"

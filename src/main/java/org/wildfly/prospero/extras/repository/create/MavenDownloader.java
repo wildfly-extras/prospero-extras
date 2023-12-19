@@ -20,6 +20,7 @@ import org.wildfly.prospero.wfchannel.MavenSessionManager;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -68,8 +69,6 @@ public class MavenDownloader {
         final List<ArtifactRequest> requests = artifactSet.stream()
                 .flatMap(a -> {
                     if (includeSources && a.getClassifier() != null && a.getExtension().equals("jar")) {
-                        // TODO: is there -sources jar for jars with classifer (e.g. wildfly-cli -client)
-                        // TODO: are there -sources for zips (e.g. feature packs)
                         Artifact sourcesArtifact = new DefaultArtifact(
                                 a.getGroupId(),
                                 a.getArtifactId(),
@@ -87,13 +86,31 @@ public class MavenDownloader {
                 })
                 .collect(Collectors.toList());
 
-        final List<ArtifactResult> res = mvnSystem.resolveArtifacts(mvnSession, requests);
+        List<Artifact> res;
+        try {
+            res = mvnSystem.resolveArtifacts(mvnSession, requests).stream().map(ArtifactResult::getArtifact).collect(Collectors.toList());
+        } catch (ArtifactResolutionException e) {
+            ArrayList<Artifact> resolved = new ArrayList<>();
+            for (ArtifactResult result : e.getResults()) {
+                if (!result.isResolved()) {
+                    if ("sources".equals(result.getRequest().getArtifact().getClassifier())) {
+                        System.out.println("WARNING: Unable to resolve sources jar: " + result.getArtifact());
+                    } else {
+                        throw e;
+                    }
+                } else {
+                    resolved.add(result.getArtifact());
+                }
+            }
+            res = resolved;
+        }
+
         // TODO: check for errors
         final DeployRequest deployRequest = new DeployRequest();
         deployRequest.setRepository(new RemoteRepository
                 .Builder("output", "default", outputPath.toUri().toURL().toExternalForm())
                 .build());
-        res.stream().map(ArtifactResult::getArtifact).forEach(deployRequest::addArtifact);
+        res.forEach(deployRequest::addArtifact);
         mvnSystem.deploy(mvnSession, deployRequest);
     }
 }

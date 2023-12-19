@@ -41,12 +41,17 @@ public class DownloadRepositoryCommand implements Callable<Integer> {
     @CommandLine.Option(names={"--feature-packs"}, split = ",")
     private final List<String> featurePacks = new ArrayList<>();
 
-    @CommandLine.Option(names={"--use-zip"})
-    private boolean useZip = false;
+    @CommandLine.Option(names={"--fp-mapper"})
+    private FpMapperValues fpMapper = FpMapperValues.ZIP;
 
     @CommandLine.Option(names={"--include-sources"})
     private boolean includeSources = false;
-    private final ChannelFeaturePackResolver channelFeaturePackResolver = new ChannelFeaturePackResolver();;
+
+    @CommandLine.Option(names = {"-h", "--help"}, usageHelp = true)
+    boolean help;
+    private final ChannelFeaturePackResolver channelFeaturePackResolver = new ChannelFeaturePackResolver();
+
+    enum FpMapperValues { ZIP, OFFLINER }
 
     public DownloadRepositoryCommand() {
 
@@ -77,7 +82,7 @@ public class DownloadRepositoryCommand implements Callable<Integer> {
             System.out.println("Using defined feature packs");
         }
 
-        System.out.println(Thread.currentThread() + " Resolving dependencies for:");
+        System.out.println("Resolving dependencies for:");
         for (String fp : featurePacks) {
             System.out.println("  * " + fp);
         }
@@ -116,7 +121,7 @@ public class DownloadRepositoryCommand implements Callable<Integer> {
                 throw new RuntimeException("The feature pack " + featurePackGA + " cannot be found in the channel.");
             }
 
-            if (useZip) {
+            if (fpMapper == FpMapperValues.ZIP) {
                 final File zipFile = downloader.download(
                         featurePackGA.split(":")[0],
                         featurePackGA.split(":")[1],

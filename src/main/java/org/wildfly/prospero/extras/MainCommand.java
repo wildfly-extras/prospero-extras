@@ -22,7 +22,7 @@ import picocli.CommandLine;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 
-@CommandLine.Command(name = "tools")
+@CommandLine.Command(name = "tools", resourceBundle = "UsageMessages")
 public class MainCommand implements Callable<Integer> {
 
     @CommandLine.Spec

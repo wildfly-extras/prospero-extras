@@ -27,7 +27,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class ChannelFeaturePackResolver {
-
     private static final Logger LOG = Logger.getLogger(DownloadRepositoryCommand.class);
     private static AtomicInteger counter = new AtomicInteger(0);
     protected static final int DETECTION_PARALLERLISM = Integer.getInteger("wildfly.prospero.fp.detect_threads", 20);

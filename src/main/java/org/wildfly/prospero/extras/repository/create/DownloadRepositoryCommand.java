@@ -9,8 +9,10 @@ import org.jboss.galleon.ProvisioningException;
 import org.jboss.logging.Logger;
 import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelManifest;
+import org.wildfly.channel.ChannelManifestCoordinate;
 import org.wildfly.channel.ChannelManifestMapper;
 import org.wildfly.channel.ChannelMapper;
+import org.wildfly.channel.MavenCoordinate;
 import org.wildfly.channel.Stream;
 import org.wildfly.prospero.extras.ReturnCodes;
 import picocli.CommandLine;
@@ -68,8 +70,22 @@ public class DownloadRepositoryCommand implements Callable<Integer> {
         final List<RemoteRepository> repositories = channel.getRepositories().stream()
                 .map(r -> new RemoteRepository.Builder(r.getId(), "default", r.getUrl()).build())
                 .collect(Collectors.toList());
-        // TODO: support maven GAV manifest
-        final ChannelManifest manifest = ChannelManifestMapper.from(channel.getManifestCoordinate().getUrl());
+
+        final MavenDownloader downloader = new MavenDownloader(repositories);
+
+        final Set<Artifact> artifactSet = new HashSet<>();
+
+        ChannelManifest manifest;
+        if (channel.getManifestCoordinate().getUrl() != null) {
+            manifest = ChannelManifestMapper.from(channel.getManifestCoordinate().getUrl());
+        } else {
+            final MavenCoordinate coord = channel.getManifestCoordinate().getMaven();
+            final Artifact manifestArtifact = downloader.downloadManifest(ChannelManifestCoordinate.create(null, coord));
+
+            manifest = ChannelManifestMapper.from(manifestArtifact.getFile().toURI().toURL());
+
+            artifactSet.add(manifestArtifact);
+        }
 
         // get GAVs of feature-packs;
         if (featurePacks.isEmpty()) {
@@ -87,8 +103,7 @@ public class DownloadRepositoryCommand implements Callable<Integer> {
             System.out.println("  * " + fp);
         }
 
-        final MavenDownloader downloader = new MavenDownloader(repositories);
-        final Set<Artifact> artifactSet = detectArtifactsInFeaturePacks(manifest, downloader);
+        artifactSet.addAll(detectArtifactsInFeaturePacks(manifest, downloader));
 
         System.out.println("Downloading");
 

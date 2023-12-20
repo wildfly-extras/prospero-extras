@@ -15,6 +15,8 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -47,6 +49,10 @@ class FeaturePackUtils {
                             final String gav = artifact.split("=")[1];
 
                             final DefaultArtifact mavenArtifact = fromModulesGav(gav);
+                            if (mavenArtifact == null) {
+                                System.out.println("Ignoring artifact definition" + gav);
+                                continue;
+                            }
                             final Optional<Stream> version = manifest.findStreamFor(mavenArtifact.getGroupId(), mavenArtifact.getArtifactId());
                             //   if the artifact not in the manifest, ignore
                             if (version.isPresent()) {
@@ -61,11 +67,17 @@ class FeaturePackUtils {
         return res;
     }
 
-    private static DefaultArtifact fromModulesGav(String str) {
+    static DefaultArtifact fromModulesGav(String coordStr) {
+        coordStr = evaluatePropertiesToDefaults(coordStr);
+        if (coordStr == null) {
+            return null;
+        }
+
         String extension = "jar";
-        final String[] parts = str.split(":");
+
+        final String[] parts = coordStr.split(":");
         if(parts.length < 2) {
-            throw new IllegalArgumentException("Unexpected artifact coordinates format: " + str);
+            throw new IllegalArgumentException("Unexpected artifact coordinates format: " + coordStr);
         }
         final String groupId = parts[0];
         final String artifactId = parts[1];
@@ -84,7 +96,7 @@ class FeaturePackUtils {
                         extension = parts[4];
                     }
                     if (parts.length > 5) {
-                        throw new IllegalArgumentException("Unexpected artifact coordinates format: " + str);
+                        throw new IllegalArgumentException("Unexpected artifact coordinates format: " + coordStr);
                     }
                 }
             }
@@ -95,5 +107,21 @@ class FeaturePackUtils {
                 classifier,
                 extension,
                 version);
+    }
+
+    private static String evaluatePropertiesToDefaults(String gav) {
+        final Pattern PATTERN = Pattern.compile("\\$\\{.*?\\}");
+        final Matcher matcher = PATTERN.matcher(gav);
+        while (matcher.find()) {
+            final String group = matcher.group(0);
+            final String content = group.substring(2, group.length() - 1);
+            final int separatorIndex = content.indexOf(':');
+            if (separatorIndex < 0) {
+                return null;
+            } else {
+                gav = gav.replace(group, content.substring(separatorIndex+1));
+            }
+        }
+        return gav;
     }
 }

@@ -10,10 +10,16 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.VersionRangeRequest;
+import org.eclipse.aether.resolution.VersionRangeResolutionException;
+import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.transfer.AbstractTransferListener;
 import org.eclipse.aether.transfer.TransferCancelledException;
 import org.eclipse.aether.transfer.TransferEvent;
+import org.eclipse.aether.version.Version;
 import org.jboss.galleon.ProvisioningException;
+import org.wildfly.channel.ChannelManifestCoordinate;
+import org.wildfly.channel.version.VersionMatcher;
 import org.wildfly.prospero.api.MavenOptions;
 import org.wildfly.prospero.wfchannel.MavenSessionManager;
 
@@ -22,6 +28,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -45,6 +52,42 @@ public class MavenDownloader {
                 });
     }
 
+    Artifact downloadManifest(ChannelManifestCoordinate coord) throws VersionRangeResolutionException, ArtifactResolutionException {
+        // resolve version range
+        final VersionRangeRequest req = new VersionRangeRequest();
+        req.setRepositories(repositories);
+        req.setArtifact(new DefaultArtifact(
+                coord.getGroupId(),
+                coord.getArtifactId(),
+                "manifest",
+                "yaml",
+                "[0,)"
+        ));
+        final VersionRangeResult result = mvnSystem.resolveVersionRange(mvnSession, req);
+        final Optional<String> latestVersion = VersionMatcher.getLatestVersion(result.getVersions().stream().map(Version::toString).collect(Collectors.toSet()));
+
+        if (latestVersion.isEmpty()) {
+            throw new RuntimeException("Could not find latest version " + coord);
+        }
+        // download the latest version
+
+        final ArtifactRequest artifactRequest = new ArtifactRequest();
+        final DefaultArtifact fpArtifact = new DefaultArtifact(
+                coord.getGroupId(),
+                coord.getArtifactId(),
+                "manifest",
+                "yaml",
+                latestVersion.get()
+        );
+        artifactRequest.setArtifact(fpArtifact);
+        artifactRequest.setRepositories(repositories);
+        final ArtifactResult artifactResult = mvnSystem.resolveArtifact(mvnSession, artifactRequest);
+        if (!artifactResult.isResolved()) {
+            throw new RuntimeException("Unable to resolve artifact " + fpArtifact + " from repositories.");
+        }
+        return artifactResult.getArtifact();
+    }
+
     File download(String groupId, String artifactId, String classifier, String extension, String version) throws ArtifactResolutionException {
         final ArtifactRequest artifactRequest = new ArtifactRequest();
         final DefaultArtifact fpArtifact = new DefaultArtifact(
@@ -57,11 +100,9 @@ public class MavenDownloader {
         artifactRequest.setArtifact(fpArtifact);
         artifactRequest.setRepositories(repositories);
         final ArtifactResult artifactResult = mvnSystem.resolveArtifact(mvnSession, artifactRequest);
-
         if (!artifactResult.isResolved()) {
             throw new RuntimeException("Unable to resolve artifact " + fpArtifact + " from repositories.");
         }
-
         return artifactResult.getArtifact().getFile();
     }
 

@@ -87,6 +87,7 @@ class ChannelFeaturePackResolver {
                 return url;
             }
         } catch (IOException e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
         return null;
@@ -135,6 +136,10 @@ class ChannelFeaturePackResolver {
             String fpGa = null;
 
             for (RemoteRepository repo : repositories) {
+                if (repo.getUrl().startsWith("file")) {
+                    // TODO: support file
+                    continue;
+                }
                 final String baseUrl = repo.getUrl();
                 zipUrl = getExistingZipUrl(client, baseUrl, stream);
                 if (zipUrl != null) {

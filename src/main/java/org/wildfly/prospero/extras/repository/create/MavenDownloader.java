@@ -56,18 +56,24 @@ public class MavenDownloader {
         // resolve version range
         final VersionRangeRequest req = new VersionRangeRequest();
         req.setRepositories(repositories);
-        req.setArtifact(new DefaultArtifact(
-                coord.getGroupId(),
-                coord.getArtifactId(),
-                "manifest",
-                "yaml",
-                "[0,)"
-        ));
-        final VersionRangeResult result = mvnSystem.resolveVersionRange(mvnSession, req);
-        final Optional<String> latestVersion = VersionMatcher.getLatestVersion(result.getVersions().stream().map(Version::toString).collect(Collectors.toSet()));
+        final String version;
+        if (coord.getMaven().getVersion() == null) {
+            req.setArtifact(new DefaultArtifact(
+                    coord.getGroupId(),
+                    coord.getArtifactId(),
+                    "manifest",
+                    "yaml",
+                    "[0,)"
+            ));
+            final VersionRangeResult result = mvnSystem.resolveVersionRange(mvnSession, req);
+            final Optional<String> latestVersion = VersionMatcher.getLatestVersion(result.getVersions().stream().map(Version::toString).collect(Collectors.toSet()));
 
-        if (latestVersion.isEmpty()) {
-            throw new RuntimeException("Could not find latest version " + coord);
+            if (latestVersion.isEmpty()) {
+                throw new RuntimeException("Could not find latest version " + coord);
+            }
+            version = latestVersion.get();
+        } else {
+            version = coord.getVersion();
         }
         // download the latest version
 
@@ -77,7 +83,7 @@ public class MavenDownloader {
                 coord.getArtifactId(),
                 "manifest",
                 "yaml",
-                latestVersion.get()
+                version
         );
         artifactRequest.setArtifact(fpArtifact);
         artifactRequest.setRepositories(repositories);
@@ -106,9 +112,22 @@ public class MavenDownloader {
         return artifactResult.getArtifact().getFile();
     }
 
-    void downloadAndDeploy(Set<Artifact> artifactSet, Path outputPath, boolean includeSources) throws ArtifactResolutionException, MalformedURLException, DeploymentException {
+    void downloadAndDeploy(Set<Artifact> artifactSet, Path outputPath, boolean includeSources, boolean includePoms)
+            throws ArtifactResolutionException, MalformedURLException, DeploymentException {
         final List<ArtifactRequest> requests = artifactSet.stream()
                 .flatMap(a -> {
+                    final ArrayList<Artifact> artifacts = new ArrayList<>();
+                    artifacts.add(a);
+                    if (includePoms) {
+                        Artifact pomArtifact = new DefaultArtifact(
+                                a.getGroupId(),
+                                a.getArtifactId(),
+                                "",
+                                "pom",
+                                a.getVersion()
+                        );
+                        artifacts.add(pomArtifact);
+                    }
                     if (includeSources && a.getClassifier() != null && a.getExtension().equals("jar")) {
                         Artifact sourcesArtifact = new DefaultArtifact(
                                 a.getGroupId(),
@@ -117,13 +136,9 @@ public class MavenDownloader {
                                 a.getExtension(),
                                 a.getVersion()
                         );
-                        return java.util.stream.Stream.of(
-                                new ArtifactRequest(a, repositories, null),
-                                new ArtifactRequest(sourcesArtifact, repositories, null)
-                        );
-                    } else {
-                        return java.util.stream.Stream.of(new ArtifactRequest(a, repositories, null));
+                        artifacts.add(sourcesArtifact);
                     }
+                    return artifacts.stream().map(ar->new ArtifactRequest(ar, repositories, null));
                 })
                 .collect(Collectors.toList());
 

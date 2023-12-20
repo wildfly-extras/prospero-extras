@@ -49,6 +49,9 @@ public class DownloadRepositoryCommand implements Callable<Integer> {
     @CommandLine.Option(names={"--include-sources"})
     private boolean includeSources = false;
 
+    @CommandLine.Option(names={"--include-poms"})
+    private boolean includePoms = false;
+
     @CommandLine.Option(names = {"-h", "--help"}, usageHelp = true)
     boolean help;
     private final ChannelFeaturePackResolver channelFeaturePackResolver = new ChannelFeaturePackResolver();
@@ -82,6 +85,8 @@ public class DownloadRepositoryCommand implements Callable<Integer> {
             final MavenCoordinate coord = channel.getManifestCoordinate().getMaven();
             final Artifact manifestArtifact = downloader.downloadManifest(ChannelManifestCoordinate.create(null, coord));
 
+            System.out.println("Using manifest: " + manifestArtifact);
+
             manifest = ChannelManifestMapper.from(manifestArtifact.getFile().toURI().toURL());
 
             artifactSet.add(manifestArtifact);
@@ -108,7 +113,7 @@ public class DownloadRepositoryCommand implements Callable<Integer> {
         System.out.println("Downloading");
 
         // download and deploy the artifact
-        downloader.downloadAndDeploy(artifactSet, repositoryPath, includeSources);
+        downloader.downloadAndDeploy(artifactSet, repositoryPath, includeSources, includePoms);
 
         // TODO check that all the artifacts in the manifest were downloaded
         final Set<String> downloaded = artifactSet.stream()

@@ -3,7 +3,6 @@ package org.wildfly.prospero.extras.manifest.merge;
 import org.wildfly.channel.ChannelManifest;
 import org.wildfly.channel.ChannelManifestMapper;
 import org.wildfly.channel.Stream;
-import org.wildfly.channel.version.VersionMatcher;
 import picocli.CommandLine;
 
 import java.nio.file.Path;
@@ -14,13 +13,19 @@ import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
-@CommandLine.Command(name = "merge")
+@CommandLine.Command(name = "manifest-merge")
 public class ManifestMergeCommand implements Callable<Integer> {
     @CommandLine.Parameters(index = "0")
     Path manifestOne;
 
     @CommandLine.Parameters(index = "1")
     Path manifestTwo;
+
+    @CommandLine.Option(names = {"--mode"}, defaultValue = "LATEST")
+    VersionMergeStrategy.Strategies mergeStrategy;
+
+    @CommandLine.Option(names = {"-h", "--help"}, usageHelp = true)
+    boolean help;
 
     @Override
     public Integer call() throws Exception {
@@ -39,7 +44,8 @@ public class ManifestMergeCommand implements Callable<Integer> {
             if (!presentKeys.containsKey(key)) {
                 merged.add(s);
             } else {
-                if (VersionMatcher.COMPARATOR.compare(s.getVersion(), presentKeys.get(key).getVersion()) > 0) {
+                final String version = mergeStrategy.merge(presentKeys.get(key).getVersion(), s.getVersion());
+                if (!version.equals(presentKeys.get(key).getVersion())) {
                     merged.remove(presentKeys.get(key));
                     merged.add(s);
                 }

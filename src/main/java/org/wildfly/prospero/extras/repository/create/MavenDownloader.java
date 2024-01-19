@@ -137,6 +137,14 @@ public class MavenDownloader {
                                 a.getVersion()
                         );
                         artifacts.add(sourcesArtifact);
+                        Artifact testSourcesArtifact = new DefaultArtifact(
+                                a.getGroupId(),
+                                a.getArtifactId(),
+                                "test-sources",
+                                a.getExtension(),
+                                a.getVersion()
+                        );
+                        artifacts.add(testSourcesArtifact);
                     }
                     return artifacts.stream().map(ar->new ArtifactRequest(ar, repositories, null));
                 })
@@ -150,6 +158,8 @@ public class MavenDownloader {
             for (ArtifactResult result : e.getResults()) {
                 if (!result.isResolved()) {
                     if ("sources".equals(result.getRequest().getArtifact().getClassifier())) {
+                        System.out.println("WARNING: Unable to resolve sources jar: " + result.getArtifact());
+                    } else if ("test-sources".equals(result.getRequest().getArtifact().getClassifier())) {
                         System.out.println("WARNING: Unable to resolve sources jar: " + result.getArtifact());
                     } else {
                         throw e;

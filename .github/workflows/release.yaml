@@ -1,10 +1,12 @@
-name: WildFly Prospero Release
+name: Prospero-extras Release
 
 on:
   pull_request:
     types: [closed]
     paths:
       - '.github/project.yml'
+
+permissions: write-all
 
 jobs:
   release:
@@ -23,13 +25,23 @@ jobs:
         with:
           java-version: 11
       - name: maven release ${{steps.metadata.outputs.current-version}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           java -version
-          git config --global user.name "Prospero Extras CI"
+          git config --global user.name "Prospero-extras CI"
           git config --global user.email "bspyrkos@redhat.com"
           git checkout -b release
-          mvn -B release:prepare -Pdist,jboss-release -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}}
+          mvn -B release:prepare -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}}
           git checkout ${{github.base_ref}}
           git rebase release
           git push
           git push --tags
+      - name: publish release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
+        with:
+          files: target/prospero-extras-${{steps.metadata.outputs.current-version}}-shaded.jar
+          tag_name: ${{steps.metadata.outputs.current-version}}
+          generate_release_notes: true

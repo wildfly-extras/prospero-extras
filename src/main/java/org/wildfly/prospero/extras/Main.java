@@ -18,12 +18,16 @@
 package org.wildfly.prospero.extras;
 
 import org.wildfly.prospero.extras.bundle.create.CreateBundleCommand;
+import org.wildfly.prospero.extras.channel.ChannelCommands;
+import org.wildfly.prospero.extras.channel.query.QueryVersionCommand;
 import org.wildfly.prospero.extras.manifest.diff.ManifestsDiffCommand;
 import org.wildfly.prospero.extras.manifest.download.DownloadDiffCommand;
 import org.wildfly.prospero.extras.manifest.merge.ManifestMergeCommand;
 import org.wildfly.prospero.extras.repository.create.DownloadArtifactListCommand;
 import org.wildfly.prospero.extras.repository.create.DownloadRepositoryCommand;
 import picocli.CommandLine;
+
+import java.util.List;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -42,6 +46,10 @@ public class Main {
 
         commandLine.addSubcommand(new DownloadRepositoryCommand());
         commandLine.addSubcommand(new DownloadArtifactListCommand());
+
+        final ChannelCommands channelSubcommand = new ChannelCommands(List.of(new QueryVersionCommand()));
+        commandLine.addSubcommand(channelSubcommand);
+        channelSubcommand.addSubCommands(commandLine);
 
         commandLine.setUsageHelpAutoWidth(true);
         return commandLine;

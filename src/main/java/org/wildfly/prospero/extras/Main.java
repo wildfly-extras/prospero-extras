@@ -21,6 +21,7 @@ import org.wildfly.prospero.extras.bundle.create.CreateBundleCommand;
 import org.wildfly.prospero.extras.manifest.diff.ManifestsDiffCommand;
 import org.wildfly.prospero.extras.manifest.download.DownloadDiffCommand;
 import org.wildfly.prospero.extras.manifest.merge.ManifestMergeCommand;
+import org.wildfly.prospero.extras.repository.create.DownloadArtifactListCommand;
 import org.wildfly.prospero.extras.repository.create.DownloadRepositoryCommand;
 import picocli.CommandLine;
 
@@ -40,6 +41,7 @@ public class Main {
         commandLine.addSubcommand(new ManifestMergeCommand());
 
         commandLine.addSubcommand(new DownloadRepositoryCommand());
+        commandLine.addSubcommand(new DownloadArtifactListCommand());
 
         commandLine.setUsageHelpAutoWidth(true);
         return commandLine;

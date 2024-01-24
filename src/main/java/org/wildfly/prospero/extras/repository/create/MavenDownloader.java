@@ -158,10 +158,11 @@ public class MavenDownloader {
             for (ArtifactResult result : e.getResults()) {
                 if (!result.isResolved()) {
                     if ("sources".equals(result.getRequest().getArtifact().getClassifier())) {
-                        System.out.println("WARNING: Unable to resolve sources jar: " + result.getArtifact());
+                        System.out.println("WARNING: Unable to resolve sources jar: " + result.getRequest().getArtifact());
                     } else if ("test-sources".equals(result.getRequest().getArtifact().getClassifier())) {
-                        System.out.println("WARNING: Unable to resolve sources jar: " + result.getArtifact());
+                        System.out.println("WARNING: Unable to resolve sources jar: " + result.getRequest().getArtifact());
                     } else {
+                        System.err.println("Unable to resolve: " + result.getRequest().getArtifact());
                         throw e;
                     }
                 } else {

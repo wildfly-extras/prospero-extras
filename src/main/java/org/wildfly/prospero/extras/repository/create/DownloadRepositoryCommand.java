@@ -1,6 +1,10 @@
 package org.wildfly.prospero.extras.repository.create;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Parent;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -15,22 +19,31 @@ import org.wildfly.channel.ChannelMapper;
 import org.wildfly.channel.MavenCoordinate;
 import org.wildfly.channel.Stream;
 import org.wildfly.prospero.extras.ReturnCodes;
+import org.wildfly.prospero.extras.shared.CommandWithHelp;
 import picocli.CommandLine;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Callable;
+import java.util.Stack;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-@CommandLine.Command(name = "download-repository")
-public class DownloadRepositoryCommand implements Callable<Integer> {
+@CommandLine.Command(name = "from-channel")
+public class DownloadRepositoryCommand extends CommandWithHelp {
 
     private static final Logger LOG = Logger.getLogger(DownloadRepositoryCommand.class);
 
@@ -52,8 +65,8 @@ public class DownloadRepositoryCommand implements Callable<Integer> {
     @CommandLine.Option(names={"--include-poms"})
     private boolean includePoms = false;
 
-    @CommandLine.Option(names = {"-h", "--help"}, usageHelp = true)
-    boolean help;
+    @CommandLine.Option(names={"--artifact-list"})
+    private boolean artifactList = false;
     private final ChannelFeaturePackResolver channelFeaturePackResolver = new ChannelFeaturePackResolver();
 
     enum FpMapperValues { ZIP, OFFLINER }
@@ -113,6 +126,8 @@ public class DownloadRepositoryCommand implements Callable<Integer> {
         System.out.println("Downloading");
 
         // download and deploy the artifact
+
+
         downloader.downloadAndDeploy(artifactSet, repositoryPath, includeSources, includePoms);
 
         // TODO check that all the artifacts in the manifest were downloaded
@@ -127,7 +142,106 @@ public class DownloadRepositoryCommand implements Callable<Integer> {
 
         if (!requested.isEmpty()) {
             System.out.println("WARNING: Following streams defined in the manifest were not resolved:");
-            requested.forEach(ga-> System.out.println("  * " + ga));
+            requested.forEach(ga -> System.out.println("  * " + ga));
+        }
+
+        // download parent poms
+        if (includePoms) {
+            final Stack<Path> poms = new Stack<>();
+            final Set<Artifact> pomArtifacts = new HashSet<>();
+            Files.walkFileTree(repositoryPath, new FileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    if (!file.getFileName().toString().endsWith(".pom")) {
+                        return FileVisitResult.CONTINUE;
+                    }
+                    poms.push(file);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+            while (!poms.isEmpty()) {
+                final Path file = poms.pop();
+                try {
+                    final Model model = new MavenXpp3Reader().read(new FileInputStream(file.toFile()));
+                    final Parent parentModel = model.getParent();
+                    if (parentModel != null) {
+                        final String groupId = parentModel.getGroupId();
+                        final String artifactId = parentModel.getArtifactId();
+                        final String version = parentModel.getVersion();
+
+                        System.out.printf("Resolving pom: %s:%s:%s%n", groupId, artifactId, version);
+                        final Path parent = downloader.download(groupId, artifactId, null, "pom", version).toPath();
+                        poms.push(parent);
+                        pomArtifacts.add(new DefaultArtifact(
+                                groupId,
+                                artifactId,
+                                null,
+                                "pom",
+                                version,
+                                null,
+                                parent.toFile()
+                        ));
+                    }
+
+//                    if (model.getDependencyManagement() != null) {
+//                        // TODO: resolve versions
+//                        for (Dependency dependency : model.getDependencyManagement().getDependencies()) {
+//                            if (dependency.getScope() != null && dependency.getScope().equals("import")) {
+//                                final String groupId = dependency.getGroupId();
+//                                final String artifactId = dependency.getArtifactId();
+//                                final String version = dependency.getVersion();
+//                                System.out.printf("Resolving pom: %s:%s:%s%n", groupId, artifactId, version);
+//                                final Path dep = downloader.download(groupId, artifactId, null, "pom", version).toPath();
+//                                poms.push(dep);
+//                                pomArtifacts.add(new DefaultArtifact(
+//                                        groupId,
+//                                        artifactId,
+//                                        null,
+//                                        "pom",
+//                                        version,
+//                                        null,
+//                                        dep.toFile()
+//                                ));
+//                            }
+//                        }
+//                    }
+
+                } catch (XmlPullParserException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            downloader.downloadAndDeploy(pomArtifacts, repositoryPath, false, false);
+
+            if (artifactList) {
+                final TreeSet<String> gavs = new TreeSet<>();
+
+                artifactSet.stream().forEach(a->{
+                        gavs.add(String.format("%s:%s:%s:%s:%s", a.getGroupId(), a.getArtifactId(), a.getExtension(), a.getVersion(), "compile"));
+                    });
+                pomArtifacts.stream().forEach(a->{
+                    gavs.add(String.format("%s:%s:%s:%s:%s", a.getGroupId(), a.getArtifactId(), a.getExtension(), a.getVersion(), "compile"));
+                });
+
+                try (PrintWriter pw = new PrintWriter(new FileWriter("artifact-list"))) {
+                    gavs.forEach(pw::println);
+                }
+            }
         }
 
         return ReturnCodes.SUCCESS;

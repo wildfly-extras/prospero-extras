@@ -103,7 +103,7 @@ public class ManifestsDiffCommand implements Callable<Integer> {
         Map<String, String> versionMapOne = new TreeMap<>();
         for (Stream stream : streamsOne) {
             String spec = String.format("%s:%s", stream.getGroupId(), stream.getArtifactId());
-            versionMapOne.put(spec, stream.getVersion());
+            versionMapOne.put(spec, stream.getVersion() == null?stream.getVersionPattern().toString():stream.getVersion());
         }
         return versionMapOne;
     }

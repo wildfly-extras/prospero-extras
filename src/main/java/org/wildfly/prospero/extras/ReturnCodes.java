@@ -19,4 +19,5 @@ package org.wildfly.prospero.extras;
 
 public class ReturnCodes {
     public static final Integer SUCCESS = 0;
+    public static final Integer INVALID_ARGUMENTS = 1;
 }

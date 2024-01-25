@@ -18,10 +18,15 @@
 package org.wildfly.prospero.extras;
 
 import org.wildfly.prospero.extras.bundle.create.CreateBundleCommand;
+import org.wildfly.prospero.extras.channel.ChannelCommands;
+import org.wildfly.prospero.extras.channel.query.QueryVersionCommand;
 import org.wildfly.prospero.extras.manifest.diff.ManifestsDiffCommand;
 import org.wildfly.prospero.extras.manifest.download.DownloadDiffCommand;
 import org.wildfly.prospero.extras.manifest.merge.ManifestMergeCommand;
+import org.wildfly.prospero.extras.repoository.RepositoryCommands;
+import org.wildfly.prospero.extras.repository.create.DownloadArtifactListCommand;
 import org.wildfly.prospero.extras.repository.create.DownloadRepositoryCommand;
+import org.wildfly.prospero.extras.repository.create.RepositoryDownloadCommands;
 import picocli.CommandLine;
 
 public class Main {
@@ -40,10 +45,21 @@ public class Main {
         commandLine.addSubcommand(new ManifestMergeCommand());
 
         commandLine.addSubcommand(new DownloadRepositoryCommand());
+        commandLine.addSubcommand(new DownloadArtifactListCommand());
+
+        final ChannelCommands channelSubcommand = new ChannelCommands(commandLine);
+        commandLine.addSubcommand(channelSubcommand);
+        channelSubcommand.addSubCommand(new QueryVersionCommand());
+
+        final RepositoryCommands repositoryCommands = new RepositoryCommands(commandLine);
+        commandLine.addSubcommand(repositoryCommands);
+        final RepositoryDownloadCommands repoDownloadCommands = new RepositoryDownloadCommands(repositoryCommands.getCtx());
+        repositoryCommands.addSubCommand(repoDownloadCommands);
+        repoDownloadCommands.addSubCommand(new DownloadArtifactListCommand());
+        repoDownloadCommands.addSubCommand(new DownloadRepositoryCommand());
 
         commandLine.setUsageHelpAutoWidth(true);
         return commandLine;
     }
-
 
 }

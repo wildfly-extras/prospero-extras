@@ -4,18 +4,18 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.wildfly.prospero.extras.ReturnCodes;
+import org.wildfly.prospero.extras.shared.CommandWithHelp;
 import picocli.CommandLine;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-@CommandLine.Command(name = "download-artifact-list")
-public class DownloadArtifactListCommand implements Callable<Integer> {
+@CommandLine.Command(name = "from-list")
+public class DownloadArtifactListCommand extends CommandWithHelp {
 
     @CommandLine.Option(names={"--out"}, required = true)
     private Path repositoryPath;

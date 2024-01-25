@@ -19,6 +19,7 @@ import org.wildfly.channel.ChannelMapper;
 import org.wildfly.channel.MavenCoordinate;
 import org.wildfly.channel.Stream;
 import org.wildfly.prospero.extras.ReturnCodes;
+import org.wildfly.prospero.extras.shared.CommandWithHelp;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -39,11 +40,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
-import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
-@CommandLine.Command(name = "download-repository")
-public class DownloadRepositoryCommand implements Callable<Integer> {
+@CommandLine.Command(name = "from-channel")
+public class DownloadRepositoryCommand extends CommandWithHelp {
 
     private static final Logger LOG = Logger.getLogger(DownloadRepositoryCommand.class);
 
@@ -67,9 +67,6 @@ public class DownloadRepositoryCommand implements Callable<Integer> {
 
     @CommandLine.Option(names={"--artifact-list"})
     private boolean artifactList = false;
-
-    @CommandLine.Option(names = {"-h", "--help"}, usageHelp = true)
-    boolean help;
     private final ChannelFeaturePackResolver channelFeaturePackResolver = new ChannelFeaturePackResolver();
 
     enum FpMapperValues { ZIP, OFFLINER }

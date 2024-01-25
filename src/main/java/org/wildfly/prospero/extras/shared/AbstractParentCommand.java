@@ -3,26 +3,16 @@ package org.wildfly.prospero.extras.shared;
 import org.wildfly.prospero.extras.ReturnCodes;
 import picocli.CommandLine;
 
-import java.util.List;
-import java.util.concurrent.Callable;
-
-public abstract class AbstractParentCommand implements Callable<Integer> {
+public abstract class AbstractParentCommand implements Command {
 
     private final String name;
-    private final List<Callable<Integer>> subcommands;
     @CommandLine.Spec
     protected CommandLine.Model.CommandSpec spec;
+    private CommandLine rootCtx;
 
-    protected AbstractParentCommand(String name, List<Callable<Integer>> subcommands) {
+    public AbstractParentCommand(String name, CommandLine rootCtx) {
+        this.rootCtx = rootCtx;
         this.name = name;
-        this.subcommands = subcommands;
-    }
-
-    public void addSubCommands(CommandLine rootCmd) {
-        CommandLine cmd = rootCmd.getSubcommands().get(name);
-        for (Callable<Integer> subcommand : subcommands) {
-            cmd.addSubcommand(subcommand);
-        }
     }
 
     @Override
@@ -31,4 +21,11 @@ public abstract class AbstractParentCommand implements Callable<Integer> {
         return ReturnCodes.INVALID_ARGUMENTS;
     }
 
+    public void addSubCommand(Command command) {
+        getCtx().addSubcommand(command);
+    }
+
+    public CommandLine getCtx() {
+        return rootCtx.getSubcommands().get(name);
+    }
 }

@@ -6,15 +6,15 @@ import org.wildfly.channel.ChannelSession;
 import org.wildfly.channel.maven.VersionResolverFactory;
 import org.wildfly.channel.spi.MavenVersionsResolver;
 import org.wildfly.prospero.extras.ReturnCodes;
+import org.wildfly.prospero.extras.shared.CommandWithHelp;
 import org.wildfly.prospero.wfchannel.MavenSessionManager;
 import picocli.CommandLine;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.Callable;
 
 @CommandLine.Command(name = "query-version")
-public class QueryVersionCommand implements Callable<Integer> {
+public class QueryVersionCommand extends CommandWithHelp {
 
     @CommandLine.Option(names={"--channel"}, required = false)
     private Path channelFile;

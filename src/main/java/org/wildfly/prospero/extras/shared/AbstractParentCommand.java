@@ -3,7 +3,7 @@ package org.wildfly.prospero.extras.shared;
 import org.wildfly.prospero.extras.ReturnCodes;
 import picocli.CommandLine;
 
-public abstract class AbstractParentCommand implements Command {
+public abstract class AbstractParentCommand extends CommandWithHelp implements Command {
 
     private final String name;
     @CommandLine.Spec

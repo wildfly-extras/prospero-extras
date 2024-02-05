@@ -19,6 +19,7 @@ package org.wildfly.prospero.extras;
 
 import org.wildfly.prospero.extras.bundle.create.CreateBundleCommand;
 import org.wildfly.prospero.extras.channel.ChannelCommands;
+import org.wildfly.prospero.extras.channel.merge.ChannelMergeCommand;
 import org.wildfly.prospero.extras.channel.query.QueryVersionCommand;
 import org.wildfly.prospero.extras.manifest.diff.ManifestsDiffCommand;
 import org.wildfly.prospero.extras.manifest.download.DownloadDiffCommand;
@@ -50,6 +51,7 @@ public class Main {
         final ChannelCommands channelSubcommand = new ChannelCommands(commandLine);
         commandLine.addSubcommand(channelSubcommand);
         channelSubcommand.addSubCommand(new QueryVersionCommand());
+        channelSubcommand.addSubCommand(new ChannelMergeCommand());
 
         final RepositoryCommands repositoryCommands = new RepositoryCommands(commandLine);
         commandLine.addSubcommand(repositoryCommands);

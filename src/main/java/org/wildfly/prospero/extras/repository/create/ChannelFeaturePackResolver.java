@@ -1,18 +1,18 @@
 package org.wildfly.prospero.extras.repository.create;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.jboss.logging.Logger;
 import org.wildfly.channel.Stream;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.ZipException;
 
 class ChannelFeaturePackResolver {
     private static final Logger LOG = Logger.getLogger(DownloadRepositoryCommand.class);
@@ -96,23 +97,16 @@ class ChannelFeaturePackResolver {
     private Path downloadZip(String zipUrl) throws IOException {
         Path tempFile = Files.createTempFile("candidate", "zip");
 
-        final URL url = new URL(zipUrl);
-        final URLConnection conn = url.openConnection();
-        conn.connect();
-
-        try(InputStream inputStream = conn.getInputStream();
-            FileOutputStream outputStream = new FileOutputStream(tempFile.toFile())) {
-
-            int BUFFER_SIZE = 4096;
-            byte[] buffer = new byte[BUFFER_SIZE];
-            int bytesRead;
-
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytesRead);
-            }
+        try (CloseableHttpClient client = HttpClients.custom()
+                .setRedirectStrategy(new LaxRedirectStrategy())
+                .build()) {
+            final HttpGet get = new HttpGet(zipUrl);
+            client.execute(get, httpResponse -> {
+                FileUtils.copyInputStreamToFile(httpResponse.getEntity().getContent(), tempFile.toFile());
+                return tempFile.toFile();
+            });
         }
 
-//        IOUtils.copy(new URL(zipUrl), tempFile.toFile(), );
         return tempFile;
     }
 
@@ -160,7 +154,7 @@ class ChannelFeaturePackResolver {
                         fpGa = stream.getGroupId() + ":" + stream.getArtifactId();
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LOG.warn("Unable to process a zip file: " + zipUrl + " Ignoring the file", e);
                     cf.completeExceptionally(e);
                 } finally {
                     if (tempFile != null) {

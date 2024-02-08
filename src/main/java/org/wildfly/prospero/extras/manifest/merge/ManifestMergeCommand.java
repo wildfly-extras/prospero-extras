@@ -24,6 +24,12 @@ public class ManifestMergeCommand implements Callable<Integer> {
     @CommandLine.Option(names = {"--mode"}, defaultValue = "LATEST")
     VersionMergeStrategy.Strategies mergeStrategy;
 
+    @CommandLine.Option(names = {"--name"}, defaultValue = "merged-manifest")
+    String mergedManifestName;
+
+    @CommandLine.Option(names = {"--id"})
+    String mergedManifestId;
+
     @CommandLine.Option(names = {"-h", "--help"}, usageHelp = true)
     boolean help;
 
@@ -52,7 +58,7 @@ public class ManifestMergeCommand implements Callable<Integer> {
             }
         }
 
-        final ChannelManifest mergedManifest = new ChannelManifest("merged", null, null, merged);
+        final ChannelManifest mergedManifest = new ChannelManifest(mergedManifestName, mergedManifestId, null, merged);
         System.out.println(ChannelManifestMapper.toYaml(mergedManifest));
 
         return 0;

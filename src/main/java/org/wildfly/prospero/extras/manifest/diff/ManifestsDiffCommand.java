@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 
@@ -72,6 +73,9 @@ public class ManifestsDiffCommand implements Callable<Integer> {
     }
 
     public static List<ArtifactChange> manifestDiff(ChannelManifest manifestOne, ChannelManifest manifestTwo) {
+        Objects.requireNonNull(manifestOne);
+        Objects.requireNonNull(manifestTwo);
+
         Map<String, String> versionMapOne = streamToMap(manifestOne);
 
         Map<String, String> versionMapTwo = streamToMap(manifestTwo);

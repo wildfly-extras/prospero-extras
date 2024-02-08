@@ -2,7 +2,7 @@ package org.wildfly.prospero.extras.manifest.merge;
 
 import org.wildfly.channel.version.VersionMatcher;
 
-interface VersionMergeStrategy {
+public interface VersionMergeStrategy {
     enum Strategies implements VersionMergeStrategy {
         LATEST(new LatestMergeStrategy()),
         FIRST(new FirstMergeStrategy());

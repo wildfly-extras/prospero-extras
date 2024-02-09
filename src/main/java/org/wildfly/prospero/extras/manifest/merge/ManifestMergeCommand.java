@@ -3,11 +3,13 @@ package org.wildfly.prospero.extras.manifest.merge;
 import org.wildfly.channel.ChannelManifest;
 import org.wildfly.channel.ChannelManifestMapper;
 import org.wildfly.channel.Stream;
+import org.wildfly.prospero.extras.ReturnCodes;
 import picocli.CommandLine;
 
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
@@ -35,9 +37,22 @@ public class ManifestMergeCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-
         final ChannelManifest manifestOne = ChannelManifestMapper.from(this.manifestOne.toUri().toURL());
         final ChannelManifest manifestTwo = ChannelManifestMapper.from(this.manifestTwo.toUri().toURL());
+
+        final ChannelManifest mergedManifest = merge(manifestOne, manifestTwo, mergeStrategy, mergedManifestName, mergedManifestId);
+
+        System.out.println(ChannelManifestMapper.toYaml(mergedManifest));
+
+        return ReturnCodes.SUCCESS;
+    }
+
+    public static ChannelManifest merge(ChannelManifest manifestOne, ChannelManifest manifestTwo,
+                                        VersionMergeStrategy.Strategies mergeStrategy,
+                                        String mergedManifestName, String mergedManifestId) {
+        Objects.requireNonNull(manifestOne);
+        Objects.requireNonNull(manifestTwo);
+        Objects.requireNonNull(mergeStrategy);
 
         final Collection<Stream> streamsOne = manifestOne.getStreams();
         final Collection<Stream> streamsTwo = manifestTwo.getStreams();
@@ -58,9 +73,6 @@ public class ManifestMergeCommand implements Callable<Integer> {
             }
         }
 
-        final ChannelManifest mergedManifest = new ChannelManifest(mergedManifestName, mergedManifestId, null, merged);
-        System.out.println(ChannelManifestMapper.toYaml(mergedManifest));
-
-        return 0;
+        return new ChannelManifest(mergedManifestName, mergedManifestId, null, merged);
     }
 }

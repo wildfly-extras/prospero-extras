@@ -29,6 +29,21 @@ public interface ManifestOperations {
                           String mergedManifestName, String mergedManifestId);
 
     /**
+     * Subtracts streams of two manifests.
+     *
+     * Returns a manifest containing only streams from the first manifest that are The versions of artifacts in streams are ignored.
+     *
+     * The excluded streams are always included in the output manifest even if they are present in the second manifest.
+     *
+     * @param manifestOne - Initial manifest that the streams will be removed from.
+     * @param manifestTwo - Manifest containing streams to be removed.
+     * @param exclusions - list of excluded streams. To include all streams matching a group a wildcard syntax.
+     * @return
+     */
+    ChannelManifest subtract(ChannelManifest manifestOne, ChannelManifest manifestTwo,
+                             List<String> exclusions);
+
+    /**
      * Performs a diff of {@code manifestOne} and {@code manifestTwo}.
      *
      * @param manifestOne - first manifest to diff

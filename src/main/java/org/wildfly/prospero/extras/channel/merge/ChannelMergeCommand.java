@@ -3,13 +3,12 @@ package org.wildfly.prospero.extras.channel.merge;
 import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelMapper;
 import org.wildfly.channel.Repository;
+import org.wildfly.prospero.extras.ChannelOperations;
 import org.wildfly.prospero.extras.ReturnCodes;
 import org.wildfly.prospero.extras.shared.CommandWithHelp;
 import picocli.CommandLine;
 
-import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
@@ -33,7 +32,7 @@ public class ChannelMergeCommand extends CommandWithHelp {
     @Override
     public Integer call() throws Exception {
         final Stream<Channel> channels = inputChannelPaths.stream()
-                .map(ChannelMergeCommand::read)
+                .map(ChannelOperations::read)
                 .flatMap(List::stream);
 
         final Channel channel = merge(channels, manifestUrl, name, description);
@@ -63,13 +62,5 @@ public class ChannelMergeCommand extends CommandWithHelp {
 
         return channelBuilder.build();
 
-    }
-
-    private static List<Channel> read(Path path) {
-        try {
-            return ChannelMapper.fromString(Files.readString(path));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

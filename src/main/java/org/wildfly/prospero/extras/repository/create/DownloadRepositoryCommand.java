@@ -13,11 +13,9 @@ import org.jboss.galleon.ProvisioningException;
 import org.jboss.logging.Logger;
 import org.wildfly.channel.Channel;
 import org.wildfly.channel.ChannelManifest;
-import org.wildfly.channel.ChannelManifestCoordinate;
-import org.wildfly.channel.ChannelManifestMapper;
 import org.wildfly.channel.ChannelMapper;
-import org.wildfly.channel.MavenCoordinate;
 import org.wildfly.channel.Stream;
+import org.wildfly.prospero.extras.ChannelOperations;
 import org.wildfly.prospero.extras.ReturnCodes;
 import org.wildfly.prospero.extras.shared.CommandWithHelp;
 import picocli.CommandLine;
@@ -41,6 +39,8 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+
+import static org.wildfly.prospero.extras.ChannelOperations.getChannelManifest;
 
 @CommandLine.Command(name = "from-channel")
 public class DownloadRepositoryCommand extends CommandWithHelp {
@@ -69,6 +69,8 @@ public class DownloadRepositoryCommand extends CommandWithHelp {
     private boolean artifactList = false;
     private final ChannelFeaturePackResolver channelFeaturePackResolver = new ChannelFeaturePackResolver();
 
+    private Set<Artifact> artifactSet;
+
     enum FpMapperValues { ZIP, OFFLINER }
 
     public DownloadRepositoryCommand() {
@@ -89,21 +91,13 @@ public class DownloadRepositoryCommand extends CommandWithHelp {
 
         final MavenDownloader downloader = new MavenDownloader(repositories);
 
-        final Set<Artifact> artifactSet = new HashSet<>();
+        artifactSet = new HashSet<>();
 
-        ChannelManifest manifest;
-        if (channel.getManifestCoordinate().getUrl() != null) {
-            manifest = ChannelManifestMapper.from(channel.getManifestCoordinate().getUrl());
-        } else {
-            final MavenCoordinate coord = channel.getManifestCoordinate().getMaven();
-            final Artifact manifestArtifact = downloader.downloadManifest(ChannelManifestCoordinate.create(null, coord));
-
-            System.out.println("Using manifest: " + manifestArtifact);
-
-            manifest = ChannelManifestMapper.from(manifestArtifact.getFile().toURI().toURL());
-
-            artifactSet.add(manifestArtifact);
+        ChannelOperations.ChannelManifestDownload manifestDownload = getChannelManifest(channel, downloader);
+        if (channel.getManifestCoordinate().getUrl() == null) {
+            artifactSet.add(manifestDownload.manifestArtifact);
         }
+        ChannelManifest manifest = manifestDownload.manifest;
 
         // get GAVs of feature-packs;
         if (featurePacks.isEmpty()) {

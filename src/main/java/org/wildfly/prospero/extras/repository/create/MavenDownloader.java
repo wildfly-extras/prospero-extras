@@ -38,7 +38,7 @@ public class MavenDownloader {
     private final DefaultRepositorySystemSession mvnSession;
     private final List<RemoteRepository> repositories;
 
-    MavenDownloader(List<RemoteRepository> repositories) throws ProvisioningException {
+    public MavenDownloader(List<RemoteRepository> repositories) throws ProvisioningException {
         this.repositories = repositories;
 
         final MavenSessionManager msm = new MavenSessionManager(MavenOptions.DEFAULT_OPTIONS);
@@ -52,7 +52,7 @@ public class MavenDownloader {
                 });
     }
 
-    Artifact downloadManifest(ChannelManifestCoordinate coord) throws VersionRangeResolutionException, ArtifactResolutionException {
+    public Artifact downloadManifest(ChannelManifestCoordinate coord) throws VersionRangeResolutionException, ArtifactResolutionException {
         // resolve version range
         final VersionRangeRequest req = new VersionRangeRequest();
         req.setRepositories(repositories);

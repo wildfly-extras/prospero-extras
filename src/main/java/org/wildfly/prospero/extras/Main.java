@@ -23,6 +23,7 @@ import org.wildfly.prospero.extras.channel.merge.ChannelMergeCommand;
 import org.wildfly.prospero.extras.channel.query.QueryVersionCommand;
 import org.wildfly.prospero.extras.manifest.diff.ManifestsDiffCommand;
 import org.wildfly.prospero.extras.manifest.download.DownloadDiffCommand;
+import org.wildfly.prospero.extras.manifest.from.ManifestFromCommand;
 import org.wildfly.prospero.extras.manifest.merge.ManifestMergeCommand;
 import org.wildfly.prospero.extras.manifest.subtract.ManifestSubtractCommand;
 import org.wildfly.prospero.extras.repoository.RepositoryCommands;
@@ -46,6 +47,7 @@ public class Main {
         commandLine.addSubcommand(new DownloadDiffCommand());
         commandLine.addSubcommand(new ManifestMergeCommand());
         commandLine.addSubcommand(new ManifestSubtractCommand());
+        commandLine.addSubcommand(new ManifestFromCommand());
 
         commandLine.addSubcommand(new DownloadRepositoryCommand());
         commandLine.addSubcommand(new DownloadArtifactListCommand());

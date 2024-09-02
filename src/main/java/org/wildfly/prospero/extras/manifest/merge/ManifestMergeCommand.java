@@ -48,7 +48,7 @@ public class ManifestMergeCommand implements Callable<Integer> {
     }
 
     public static ChannelManifest merge(ChannelManifest manifestOne, ChannelManifest manifestTwo,
-                                        VersionMergeStrategy.Strategies mergeStrategy,
+                                        VersionMergeStrategy mergeStrategy,
                                         String mergedManifestName, String mergedManifestId) {
         Objects.requireNonNull(manifestOne);
         Objects.requireNonNull(manifestTwo);
@@ -62,14 +62,25 @@ public class ManifestMergeCommand implements Callable<Integer> {
         Set<Stream> merged = new TreeSet<>(streamsOne);
         for (Stream s : streamsTwo) {
             final String key = s.getGroupId() + ":" + s.getArtifactId();
+            final String versionOne;
+            final String versionTwo = s.getVersion();
             if (!presentKeys.containsKey(key)) {
-                merged.add(s);
+                versionOne = null;
             } else {
-                final String version = mergeStrategy.merge(presentKeys.get(key).getVersion(), s.getVersion());
-                if (!version.equals(presentKeys.get(key).getVersion())) {
-                    merged.remove(presentKeys.get(key));
-                    merged.add(s);
+                versionOne = presentKeys.get(key).getVersion();
+            }
+
+            final String version = mergeStrategy.merge(versionOne, versionTwo);
+            final Stream streamOne = presentKeys.get(key);
+            if (version == null) {
+                if (streamOne != null) {
+                    merged.remove(streamOne);
                 }
+            } else if (!version.equals(versionOne)) {
+                if (streamOne != null) {
+                    merged.remove(presentKeys.get(key));
+                }
+                merged.add(s);
             }
         }
 

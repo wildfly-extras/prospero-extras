@@ -2,5 +2,5 @@ name: Prospero extras
 # Open the PR to do the PR from
 # the spyrkob/prospero-extras repository
 release:
-  current-version: 1.0.0.Beta7
-  next-version: 1.0.0.Beta8-SNAPSHOT
+  current-version: 1.0.0.Final
+  next-version: 1.0.1.Final-SNAPSHOT

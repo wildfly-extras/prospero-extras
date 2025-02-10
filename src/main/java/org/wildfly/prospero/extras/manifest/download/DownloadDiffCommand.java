@@ -98,7 +98,7 @@ public class DownloadDiffCommand implements Callable<Integer> {
         System.out.println("Downloading artifacts");
         final MavenSessionManager mavenSessionManager = new MavenSessionManager(MavenOptions.DEFAULT_OPTIONS);
         final RepositorySystem system = mavenSessionManager.newRepositorySystem();
-        final DefaultRepositorySystemSession session = mavenSessionManager.newRepositorySystemSession(system, true);
+        final DefaultRepositorySystemSession session = mavenSessionManager.newRepositorySystemSession(system);
 
         Path tempFile = null;
         try {

@@ -88,7 +88,7 @@ public class CreateBundleCommand implements Callable<Integer> {
         LOG.info("Downloading artifacts");
         final MavenSessionManager mavenSessionManager = new MavenSessionManager(MavenOptions.DEFAULT_OPTIONS);
         final RepositorySystem system = mavenSessionManager.newRepositorySystem();
-        final DefaultRepositorySystemSession session = mavenSessionManager.newRepositorySystemSession(system, true);
+        final DefaultRepositorySystemSession session = mavenSessionManager.newRepositorySystemSession(system);
         try {
             final List<ArtifactResult> artifactResults = system.resolveArtifacts(session, requests);
 

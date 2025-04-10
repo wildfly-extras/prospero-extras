@@ -4,12 +4,14 @@ import org.wildfly.channel.ChannelManifest;
 import org.wildfly.channel.ChannelManifestMapper;
 import org.wildfly.channel.Stream;
 import org.wildfly.prospero.extras.ReturnCodes;
+import org.wildfly.prospero.extras.manifest.ManifestUtils;
 import picocli.CommandLine;
 
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
@@ -84,6 +86,13 @@ public class ManifestMergeCommand implements Callable<Integer> {
             }
         }
 
-        return new ChannelManifest(mergedManifestName, mergedManifestId, null, merged);
+        final Optional<String> schemaVersion = ManifestUtils.getLatestSchemaVersion(manifestOne, manifestTwo);
+        final ChannelManifest.Builder builder = new ChannelManifest.Builder()
+                .setSchemaVersion(schemaVersion.orElse(ChannelManifestMapper.CURRENT_SCHEMA_VERSION))
+                .setName(mergedManifestName)
+                .addStreams(merged.toArray(new Stream[]{}))
+                .setId(mergedManifestId);
+
+        return builder.build();
     }
 }

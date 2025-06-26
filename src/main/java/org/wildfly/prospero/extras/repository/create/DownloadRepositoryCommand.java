@@ -67,6 +67,9 @@ public class DownloadRepositoryCommand extends CommandWithHelp {
 
     @CommandLine.Option(names={"--artifact-list"})
     private boolean artifactList = false;
+
+    @CommandLine.Option(names={"--with-fallback"})
+    private boolean withFallback = false;
     private final ChannelFeaturePackResolver channelFeaturePackResolver = new ChannelFeaturePackResolver();
 
     private Set<Artifact> artifactSet;
@@ -117,17 +120,30 @@ public class DownloadRepositoryCommand extends CommandWithHelp {
 
         artifactSet.addAll(detectArtifactsInFeaturePacks(manifest, downloader));
 
+        if (withFallback) {
+            final Set<String> downloaded = artifactSet.stream()
+                    .map(a -> a.getGroupId() + ":" + a.getArtifactId())
+                .collect(Collectors.toSet());
+            for (Stream stream : manifest.getStreams()) {
+                final String id = stream.getGroupId() + ":" + stream.getArtifactId();
+                if (!downloaded.contains(id)) {
+                    // we're gonna try to guess the classifier and packaging
+                    artifactSet.add(new DefaultArtifact(stream.getGroupId(), stream.getArtifactId(), "jar", stream.getVersion()));
+                }
+            }
+
+        }
+
         System.out.println("Downloading");
 
         // download and deploy the artifact
 
-
         downloader.downloadAndDeploy(artifactSet, repositoryPath, includeSources, includePoms);
 
-        // TODO check that all the artifacts in the manifest were downloaded
         final Set<String> downloaded = artifactSet.stream()
                 .map(a -> a.getGroupId() + ":" + a.getArtifactId())
                 .collect(Collectors.toSet());
+
         final Set<String> requested = manifest.getStreams().stream()
                 .map(s -> s.getGroupId() + ":" + s.getArtifactId())
                 .collect(Collectors.toSet());
@@ -135,6 +151,14 @@ public class DownloadRepositoryCommand extends CommandWithHelp {
         requested.removeAll(downloaded);
 
         if (!requested.isEmpty()) {
+//            if (withFallback) {
+//                // attempt to download the artifacts with no classifier and default packaging (jar)
+//                requested.stream()
+//                                .map(ga->ga.split(":"))
+//                                .forEach(ga->downloader.download(ga[0], ga[1], null, "jar", ));
+//                downloader.download()
+//            }
+
             System.out.println("WARNING: Following streams defined in the manifest were not resolved:");
             requested.forEach(ga -> System.out.println("  * " + ga));
         }

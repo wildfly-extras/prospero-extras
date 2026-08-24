@@ -82,7 +82,7 @@ class ChannelFeaturePackResolver {
     }
 
     private String getExistingZipUrl(CloseableHttpClient client, String baseUrl, Stream s) {
-        final String url = baseUrl + "/" + s.getGroupId().replaceAll("\\.", "/") + "/" +
+        String url = baseUrl + "/" + s.getGroupId().replaceAll("\\.", "/") + "/" +
                 s.getArtifactId() + "/" + s.getVersion() + "/" + s.getArtifactId() + "-" + s.getVersion() + ".zip";
         if (LOG.isDebugEnabled()) {
             LOG.debug("Checking " + s + " for feature packs. Trying " + url);
@@ -92,7 +92,7 @@ class ChannelFeaturePackResolver {
             if (res.getStatusLine().getStatusCode() == 200) {
                 return url;
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }

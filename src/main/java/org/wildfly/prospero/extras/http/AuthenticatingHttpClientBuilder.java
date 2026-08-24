@@ -2,6 +2,7 @@ package org.wildfly.prospero.extras.http;
 
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.client.methods.HttpRequestWrapper;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -29,7 +30,7 @@ public class AuthenticatingHttpClientBuilder {
         } else {
             builder.addInterceptorLast((HttpRequestInterceptor) (request, context) -> {
                 if (request instanceof HttpUriRequest) {
-                    String url = ((HttpUriRequest) request).getURI().toURL().toExternalForm();
+                    String url = ((HttpRequestWrapper) request).getOriginal().getRequestLine().getUri();
                     Optional<Repository> matchingRepo = mavenSettings.getProfiles().stream()
                             .flatMap(profile -> profile.getRepositories().stream())
                             .filter(repository -> url.startsWith(repository.getUrl()))

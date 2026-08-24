@@ -4,11 +4,16 @@ import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.apache.maven.settings.Server;
+import org.apache.maven.settings.Settings;
+import org.apache.maven.settings.io.DefaultSettingsReader;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.util.repository.AuthenticationBuilder;
 import org.jboss.galleon.ProvisioningException;
 import org.jboss.logging.Logger;
 import org.wildfly.channel.Channel;
@@ -70,7 +75,12 @@ public class DownloadRepositoryCommand extends CommandWithHelp {
 
     @CommandLine.Option(names={"--with-fallback"})
     private boolean withFallback = false;
-    private final ChannelFeaturePackResolver channelFeaturePackResolver = new ChannelFeaturePackResolver();
+    private ChannelFeaturePackResolver channelFeaturePackResolver;
+
+    @CommandLine.Option(names={"--maven-settings"})
+    private Path mavenSettingsPath;
+
+    private Settings mavenSettings = null;
 
     private Set<Artifact> artifactSet;
 
@@ -82,6 +92,8 @@ public class DownloadRepositoryCommand extends CommandWithHelp {
 
     @Override
     public Integer call() throws Exception {
+        loadMavenSettings();
+        channelFeaturePackResolver = new ChannelFeaturePackResolver(mavenSettings);
 
         // for each feature-pack get list of artifacts
         // merge the lists of artifacts
@@ -89,7 +101,11 @@ public class DownloadRepositoryCommand extends CommandWithHelp {
 
         final Channel channel = ChannelMapper.from(channelFile.toUri().toURL());
         final List<RemoteRepository> repositories = channel.getRepositories().stream()
-                .map(r -> new RemoteRepository.Builder(r.getId(), "default", r.getUrl()).build())
+                .map(r -> {
+                    RemoteRepository.Builder builder = new RemoteRepository.Builder(r.getId(), "default", r.getUrl());
+                    configureAuthentication(r.getId(), mavenSettings, builder);
+                    return builder.build();
+                })
                 .collect(Collectors.toList());
 
         final MavenDownloader downloader = new MavenDownloader(repositories);
@@ -306,6 +322,13 @@ public class DownloadRepositoryCommand extends CommandWithHelp {
         return artifactSet;
     }
 
+    private void loadMavenSettings() throws IOException {
+        if (mavenSettingsPath != null) {
+            DefaultSettingsReader settingsReader = new DefaultSettingsReader();
+            mavenSettings = settingsReader.read(mavenSettingsPath.toFile(), null);
+        }
+    }
+
     private static DefaultArtifact zipMavenArtifact(String featurePackGA, Optional<Stream> fpStream) {
         return new DefaultArtifact(
                 featurePackGA.split(":")[0],
@@ -314,5 +337,18 @@ public class DownloadRepositoryCommand extends CommandWithHelp {
                 "zip",
                 fpStream.get().getVersion()
         );
+    }
+
+    private static void configureAuthentication(String repoId, Settings mavenSettings, RemoteRepository.Builder builder) {
+        if (mavenSettings != null) {
+            Server server = mavenSettings.getServer(repoId);
+            if (server != null && (server.getUsername() != null || server.getPassword() != null)) {
+                Authentication authentication = new AuthenticationBuilder()
+                        .addUsername(server.getUsername())
+                        .addPassword(server.getPassword())
+                        .build();
+                builder.setAuthentication(authentication);
+            }
+        }
     }
 }

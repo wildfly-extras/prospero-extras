@@ -5,12 +5,11 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.client.LaxRedirectStrategy;
+import org.apache.maven.settings.Settings;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.jboss.logging.Logger;
 import org.wildfly.channel.Stream;
+import org.wildfly.prospero.extras.http.AuthenticatingHttpClientBuilder;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,19 +23,26 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 
 class ChannelFeaturePackResolver {
     private static final Logger LOG = Logger.getLogger(DownloadRepositoryCommand.class);
-    private static AtomicInteger counter = new AtomicInteger(0);
     protected static final int DETECTION_PARALLERLISM = Integer.getInteger("wildfly.prospero.fp.detect_threads", 20);
+    private final Settings mavenSettings;
+
+    public ChannelFeaturePackResolver() {
+        this(null);
+    }
+
+    public ChannelFeaturePackResolver(Settings mavenSettings) {
+        this.mavenSettings = mavenSettings;
+    }
 
     List<String> findFeaturePacks(Collection<Stream> streams, List<RemoteRepository> repositories) throws IOException {
         final Set<String> featurePacks = new HashSet<>();
 
         ExecutorService executorService = null;
 
-        try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+        try (CloseableHttpClient client = AuthenticatingHttpClientBuilder.build(mavenSettings)) {
             executorService = Executors.newWorkStealingPool(DETECTION_PARALLERLISM);
 
             final List<CompletableFuture<String>> allTasks = new ArrayList<>();
@@ -96,9 +102,7 @@ class ChannelFeaturePackResolver {
     private Path downloadZip(String zipUrl) throws IOException {
         Path tempFile = Files.createTempFile("candidate", "zip");
 
-        try (CloseableHttpClient client = HttpClients.custom()
-                .setRedirectStrategy(new LaxRedirectStrategy())
-                .build()) {
+        try (CloseableHttpClient client = AuthenticatingHttpClientBuilder.build(mavenSettings)) {
             final HttpGet get = new HttpGet(zipUrl);
             client.execute(get, httpResponse -> {
                 FileUtils.copyInputStreamToFile(httpResponse.getEntity().getContent(), tempFile.toFile());

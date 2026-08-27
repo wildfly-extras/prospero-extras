@@ -11,7 +11,7 @@
 
     <groupId>org.wildfly.prospero</groupId>
     <artifactId>prospero-extras</artifactId>
-    <version>1.0.7.Final</version>
+    <version>1.0.8.Final-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -515,8 +515,4 @@
             <layout>default</layout>
         </repository>
     </repositories>
-
-  <scm>
-    <tag>1.0.7.Final</tag>
-  </scm>
 </project>

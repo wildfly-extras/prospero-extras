@@ -29,7 +29,7 @@ public class AuthenticatingHttpClientBuilder {
             });
         } else {
             builder.addInterceptorLast((HttpRequestInterceptor) (request, context) -> {
-                if (request instanceof HttpUriRequest) {
+                if (request instanceof HttpUriRequest && mavenSettings != null) {
                     String url = ((HttpRequestWrapper) request).getOriginal().getRequestLine().getUri();
                     Optional<Repository> matchingRepo = mavenSettings.getProfiles().stream()
                             .flatMap(profile -> profile.getRepositories().stream())

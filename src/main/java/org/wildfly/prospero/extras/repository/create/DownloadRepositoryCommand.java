@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.apache.maven.settings.Profile;
 import org.apache.maven.settings.Server;
 import org.apache.maven.settings.Settings;
 import org.apache.maven.settings.io.DefaultSettingsReader;
@@ -37,8 +38,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
@@ -80,6 +83,10 @@ public class DownloadRepositoryCommand extends CommandWithHelp {
     @CommandLine.Option(names={"--maven-settings"})
     private Path mavenSettingsPath;
 
+    @CommandLine.Option(names={"--maven-config"}, paramLabel = "<key>=<value>",
+            description = "Maven Resolver config property, e.g. aether.transport.http.connectTimeout=30000. Can be repeated.")
+    private final Map<String, String> mavenConfig = new HashMap<>();
+
     private Settings mavenSettings = null;
 
     private Set<Artifact> artifactSet;
@@ -108,7 +115,11 @@ public class DownloadRepositoryCommand extends CommandWithHelp {
                 })
                 .collect(Collectors.toList());
 
-        final MavenDownloader downloader = new MavenDownloader(repositories);
+        // properties from settings.xml first, so that explicit --maven-config values take precedence
+        final Map<String, String> sessionConfig = new HashMap<>(getDefaultProfileProperties(mavenSettings));
+        sessionConfig.putAll(mavenConfig);
+
+        final MavenDownloader downloader = new MavenDownloader(repositories, sessionConfig);
 
         artifactSet = new HashSet<>();
 
@@ -327,6 +338,26 @@ public class DownloadRepositoryCommand extends CommandWithHelp {
             DefaultSettingsReader settingsReader = new DefaultSettingsReader();
             mavenSettings = settingsReader.read(mavenSettingsPath.toFile(), null);
         }
+    }
+
+    /**
+     * Collects {@code <properties>} of all profiles in the settings that are marked {@code <activeByDefault>}.
+     *
+     * @param settings Maven settings, can be null
+     * @return properties of the active-by-default profiles; empty if settings is null
+     */
+    static Map<String, String> getDefaultProfileProperties(Settings settings) {
+        final Map<String, String> properties = new HashMap<>();
+        if (settings != null) {
+            for (Profile profile : settings.getProfiles()) {
+                if (profile.getActivation() != null && profile.getActivation().isActiveByDefault()) {
+                    for (String name : profile.getProperties().stringPropertyNames()) {
+                        properties.put(name, profile.getProperties().getProperty(name));
+                    }
+                }
+            }
+        }
+        return properties;
     }
 
     private static DefaultArtifact zipMavenArtifact(String featurePackGA, Optional<Stream> fpStream) {

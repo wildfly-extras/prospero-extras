@@ -27,7 +27,9 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,6 +41,15 @@ public class MavenDownloader {
     private final List<RemoteRepository> repositories;
 
     public MavenDownloader(List<RemoteRepository> repositories) throws ProvisioningException {
+        this(repositories, Collections.emptyMap());
+    }
+
+    /**
+     * @param repositories remote repositories to resolve from
+     * @param configProperties Maven Resolver config properties applied to the repository system session, e.g.
+     *                         {@code aether.transport.http.connectTimeout}
+     */
+    public MavenDownloader(List<RemoteRepository> repositories, Map<String, String> configProperties) throws ProvisioningException {
         this.repositories = repositories;
 
         final MavenSessionManager msm = new MavenSessionManager(MavenOptions.DEFAULT_OPTIONS);
@@ -50,6 +61,7 @@ public class MavenDownloader {
                         System.out.println("Downloading " + event.getResource().getResourceName());
                     }
                 });
+        configProperties.forEach(mvnSession::setConfigProperty);
     }
 
     public Artifact downloadManifest(ChannelManifestCoordinate coord) throws VersionRangeResolutionException, ArtifactResolutionException {

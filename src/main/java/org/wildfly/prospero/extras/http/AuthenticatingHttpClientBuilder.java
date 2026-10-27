@@ -36,6 +36,7 @@ public class AuthenticatingHttpClientBuilder {
     private static final int DEFAULT_SOCKET_TIMEOUT = 60_000;
     private static final int DEFAULT_MAX_RETRIES = 3;
     private static final int DEFAULT_RETRY_INTERVAL = 2_000;
+    private static final int DEFAULT_MAX_CONNECTIONS_PER_ROUTE = 20;
 
     public static CloseableHttpClient build(Settings mavenSettings) {
         final int maxRetries = Integer.getInteger(MAX_RETRIES_PROPERTY, DEFAULT_MAX_RETRIES);
@@ -43,6 +44,9 @@ public class AuthenticatingHttpClientBuilder {
 
         HttpClientBuilder builder = HttpClients.custom()
                 .setRedirectStrategy(new LaxRedirectStrategy())
+                // the default (2 connections per host) would serialize parallel requests to a single repository
+                .setMaxConnPerRoute(DEFAULT_MAX_CONNECTIONS_PER_ROUTE)
+                .setMaxConnTotal(DEFAULT_MAX_CONNECTIONS_PER_ROUTE)
                 .setDefaultRequestConfig(RequestConfig.custom()
                         .setConnectTimeout(Integer.getInteger(CONNECT_TIMEOUT_PROPERTY, DEFAULT_CONNECT_TIMEOUT))
                         .setSocketTimeout(Integer.getInteger(SOCKET_TIMEOUT_PROPERTY, DEFAULT_SOCKET_TIMEOUT))

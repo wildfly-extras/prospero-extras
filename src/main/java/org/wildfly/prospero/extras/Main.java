@@ -30,6 +30,7 @@ import org.wildfly.prospero.extras.repoository.RepositoryCommands;
 import org.wildfly.prospero.extras.repository.create.DownloadArtifactListCommand;
 import org.wildfly.prospero.extras.repository.create.DownloadRepositoryCommand;
 import org.wildfly.prospero.extras.repository.create.RepositoryDownloadCommands;
+import org.wildfly.prospero.extras.repository.verify.VerifyStreamsCommand;
 import picocli.CommandLine;
 
 public class Main {
@@ -63,6 +64,7 @@ public class Main {
         repositoryCommands.addSubCommand(repoDownloadCommands);
         repoDownloadCommands.addSubCommand(new DownloadArtifactListCommand());
         repoDownloadCommands.addSubCommand(new DownloadRepositoryCommand());
+        repositoryCommands.addSubCommand(new VerifyStreamsCommand());
 
         commandLine.setUsageHelpAutoWidth(true);
         return commandLine;
